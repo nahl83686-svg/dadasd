@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cờ Caro — Ván cờ mực</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f3ecda;
+    --paper-deep:#e8dab8;
+    --paper-shadow:#d8c69c;
+    --ink:#241f1a;
+    --ink-soft:#5a4d40;
+    --seal:#b23a2e;
+    --seal-dark:#8a291f;
+    --bamboo:#3f6b4e;
+    --bamboo-dark:#2b4d38;
+    --gold:#c6a15b;
+    --line: rgba(58, 43, 24, 0.38);
+    --frame-1:#7a4e2a;
+    --frame-2:#4d3018;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    min-height:100%;
+    background:
+      radial-gradient(1200px 700px at 15% -10%, #fbf6e8 0%, transparent 60%),
+      radial-gradient(1000px 800px at 110% 10%, #ecdfc0 0%, transparent 55%),
+      var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    display:flex;
+    justify-content:center;
+    padding:28px 16px 48px;
+    position:relative;
+    overflow-x:hidden;
+  }
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    opacity:0.05;
+    mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+  .app{
+    width:100%;
+    max-width:980px;
+    position:relative;
+    z-index:1;
+  }
+  header{
+    text-align:center;
+    margin-bottom:22px;
+  }
+  .eyebrow{
+    font-family:'Caveat',cursive;
+    font-size:22px;
+    color:var(--seal);
+    letter-spacing:0.5px;
+    margin:0 0 2px;
+  }
+  h1{
+    font-family:'Be Vietnam Pro',sans-serif;
+    font-weight:800;
+    font-size:clamp(30px,5vw,46px);
+    margin:0;
+    letter-spacing:0.5px;
+    color:var(--ink);
+    text-shadow:0 1px 0 rgba(255,255,255,0.4);
+  }
+  h1 span{color:var(--seal);}
+  .rule{
+    width:120px;
+    height:3px;
+    margin:14px auto 0;
+    background:linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  .layout{
+    display:flex;
+    gap:26px;
+    align-items:flex-start;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+  .board-wrap{
+    position:relative;
+    padding:14px;
+    border-radius:14px;
+    background:linear-gradient(160deg,var(--frame-1),var(--frame-2));
+    box-shadow:
+      0 18px 40px rgba(40,25,10,0.35),
+      inset 0 0 0 2px rgba(255,225,170,0.15);
+  }
+  .board-inner{
+    position:relative;
+    border-radius:8px;
+    overflow:hidden;
+    background:
+      radial-gradient(120% 140% at 50% -10%, #faf3de 0%, var(--paper-deep) 60%);
+    box-shadow:inset 0 0 30px rgba(90,60,20,0.25);
+  }
+  canvas{
+    display:block;
+    width:100%;
+    height:auto;
+    touch-action:manipulation;
+    cursor:pointer;
+  }
+  .win-overlay{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(36,28,20,0.32);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.25s ease;
+    border-radius:8px;
+  }
+  .win-overlay.show{
+    opacity:1;
+    pointer-events:auto;
+  }
+  .seal-stamp{
+    background:transparent;
+    text-align:center;
+    transform:scale(0.4) rotate(-18deg);
+    opacity:0;
+    transition:transform 0.35s cubic-bezier(.2,1.6,.4,1), opacity 0.2s ease;
+  }
+  .win-overlay.show .seal-stamp{
+    transform:scale(1) rotate(-8deg);
+    opacity:1;
+  }
+  .seal-box{
+    border:5px solid var(--seal);
+    color:var(--seal);
+    border-radius:14px;
+    padding:14px 26px;
+    font-family:'Be Vietnam Pro',sans-serif;
+    font-weight:800;
+    font-size:clamp(20px,4vw,32px);
+    background:rgba(243,236,218,0.92);
+    box-shadow:0 8px 22px rgba(0,0,0,0.35);
+    letter-spacing:1px;
+  }
+  .seal-sub{
+    display:block;
+    font-family:'Caveat',cursive;
+    font-weight:600;
+    font-size:0.6em;
+    color:var(--ink-soft);
+    margin-top:2px;
+    letter-spacing:0;
+  }
+  .win-actions{
+    margin-top:14px;
+  }
+  .btn-replay{
+    font-family:'Be Vietnam Pro',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    border:none;
+    padding:10px 22px;
+    border-radius:999px;
+    background:var(--seal);
+    color:#fff8ec;
+    cursor:pointer;
+    box-shadow:0 6px 14px rgba(139,41,31,0.4);
+    transition:transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .btn-replay:hover{transform:translateY(-2px);box-shadow:0 9px 18px rgba(139,41,31,0.45);}
+
+  .panel{
+    width:290px;
+    max-width:100%;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  .card{
+    background:rgba(255,251,240,0.75);
+    border:1px solid rgba(90,60,20,0.15);
+    border-radius:12px;
+    padding:16px 18px;
+    box-shadow:0 4px 14px rgba(80,55,20,0.08);
+  }
+  .card h2{
+    margin:0 0 10px;
+    font-family:'Be Vietnam Pro',sans-serif;
+    font-size:13px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:1.2px;
+    color:var(--ink-soft);
+  }
+  .seg{
+    display:flex;
+    background:rgba(90,60,20,0.08);
+    border-radius:999px;
+    padding:4px;
+    gap:4px;
+  }
+  .seg button{
+    flex:1;
+    border:none;
+    background:transparent;
+    padding:8px 6px;
+    border-radius:999px;
+    font-family:'Be Vietnam Pro',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:background 0.2s ease, color 0.2s ease;
+  }
+  .seg button.active{
+    background:var(--ink);
+    color:var(--paper);
+    box-shadow:0 3px 8px rgba(0,0,0,0.2);
+  }
+  .diff-row{margin-top:10px;}
+  .hidden{display:none !important;}
+
+  .turn-indicator{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .turn-dot{
+    width:34px;height:34px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Be Vietnam Pro',sans-serif;
+    font-weight:800;
+    font-size:16px;
+    flex-shrink:0;
+    transition:background 0.25s ease, color 0.25s ease;
+  }
+  .turn-dot.x{background:var(--seal);color:#fff8ec;}
+  .turn-dot.o{background:var(--bamboo);color:#fff8ec;}
+  .turn-text{
+    font-family:'Be Vietnam Pro',sans-serif;
+    font-weight:700;
+    font-size:15px;
+  }
+  .turn-sub{
+    font-family:'Caveat',cursive;
+    font-size:16px;
+    color:var(--ink-soft);
+    margin-top:-2px;
+  }
+  @keyframes pulseTurn{
+    0%,100%{box-shadow:0 0 0 0 rgba(178,58,46,0.35);}
+    50%{box-shadow:0 0 0 7px rgba(178,58,46,0);}
+  }
+  .turn-dot.pulse{animation:pulseTurn 1.4s ease-in-out infinite;}
+  .turn-dot.o.pulse{animation-name:pulseTurnO;}
+  @keyframes pulseTurnO{
+    0%,100%{box-shadow:0 0 0 0 rgba(63,107,78,0.35);}
+    50%{box-shadow:0 0 0 7px rgba(63,107,78,0);}
+  }
+
+  .score-row{
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .score-box{
+    flex:1;
+    text-align:center;
+    padding:10px 4px;
+    border-radius:10px;
+    background:rgba(90,60,20,0.06);
+  }
+  .score-box .label{
+    font-family:'Be Vietnam Pro',sans-serif;
+    font-weight:700;
+    font-size:11px;
+    letter-spacing:0.6px;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .score-box .value{
+    font-family:'Inter',sans-serif;
+    font-weight:700;
+    font-size:24px;
+    margin-top:2px;
+  }
+  .score-box.x .value{color:var(--seal);}
+  .score-box.o .value{color:var(--bamboo);}
+
+  .btn-row{
+    display:flex;
+    gap:8px;
+  }
+  .btn{
+    flex:1;
+    font-family:'Be Vietnam Pro',sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    padding:10px 8px;
+    border-radius:9px;
+    border:1px solid rgba(90,60,20,0.2);
+    background:rgba(255,255,255,0.5);
+    color:var(--ink);
+    cursor:pointer;
+    transition:background 0.15s ease, transform 0.1s ease;
+  }
+  .btn:hover:not(:disabled){background:rgba(255,255,255,0.85);transform:translateY(-1px);}
+  .btn:disabled{opacity:0.45;cursor:not-allowed;}
+  .btn.primary{
+    background:var(--ink);
+    color:var(--paper);
+    border-color:var(--ink);
+  }
+  .btn.primary:hover:not(:disabled){background:#3a3128;}
+
+  .foot-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-family:'Inter',sans-serif;
+    font-size:12.5px;
+    color:var(--ink-soft);
+  }
+  .sound-btn{
+    border:none;
+    background:transparent;
+    font-size:19px;
+    cursor:pointer;
+    line-height:1;
+    padding:4px;
+  }
+  .thinking{
+    font-family:'Caveat',cursive;
+    font-size:16px;
+    color:var(--seal);
+    height:18px;
+  }
+
+  @media (max-width:760px){
+    .layout{flex-direction:column;align-items:center;}
+    .panel{width:100%;max-width:420px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <p class="eyebrow">Năm quân liền mạch, một dấu triện chiến thắng</p>
+    <h1>Cờ <span>Caro</span></h1>
+    <div class="rule"></div>
+  </header>
+
+  <div class="layout">
+    <div class="board-wrap">
+      <div class="board-inner">
+        <canvas id="board" width="600" height="600" aria-label="Bàn cờ Caro 15x15"></canvas>
+        <div class="win-overlay" id="winOverlay">
+          <div class="seal-stamp">
+            <div class="seal-box"><span id="sealText">X THẮNG!</span><span class="seal-sub" id="sealSub">năm quân một mạch</span></div>
+            <div class="win-actions">
+              <button class="btn-replay" id="btnReplay">Chơi lại</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="panel">
+      <div class="card">
+        <h2>Chế độ chơi</h2>
+        <div class="seg" id="modeSeg">
+          <button data-mode="pvp" class="active">2 người</button>
+          <button data-mode="ai">Đấu máy</button>
+        </div>
+        <div class="diff-row hidden" id="diffRow">
+          <div class="seg" id="diffSeg">
+            <button data-diff="easy">Dễ</button>
+            <button data-diff="medium" class="active">Vừa</button>
+            <button data-diff="hard">Khó</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Lượt chơi</h2>
+        <div class="turn-indicator">
+          <div class="turn-dot x pulse" id="turnDot">X</div>
+          <div>
+            <div class="turn-text" id="turnText" aria-live="polite">Lượt của Người 1</div>
+            <div class="turn-sub" id="turnSub">nét mực còn tươi...</div>
+          </div>
+        </div>
+        <div class="thinking" id="thinking"></div>
+      </div>
+
+      <div class="card">
+        <h2>Bảng điểm</h2>
+        <div class="score-row">
+          <div class="score-box x">
+            <div class="label">X thắng</div>
+            <div class="value" id="scoreX">0</div>
+          </div>
+          <div class="score-box">
+            <div class="label">Hòa</div>
+            <div class="value" id="scoreDraw">0</div>
+          </div>
+          <div class="score-box o">
+            <div class="label">O thắng</div>
+            <div class="value" id="scoreO">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Điều khiển</h2>
+        <div class="btn-row">
+          <button class="btn primary" id="btnNew">Ván mới</button>
+          <button class="btn" id="btnUndo">Hoàn tác</button>
+        </div>
+        <div class="foot-row" style="margin-top:10px;">
+          <button class="btn" id="btnResetScore" style="flex:none;padding:8px 12px;">Xóa điểm</button>
+          <button class="sound-btn" id="btnSound" title="Bật/tắt âm thanh">🔊</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function(){
+  const SIZE = 15;
+  const EMPTY = 0, X = 1, O = 2;
+  const canvas = document.getElementById('board');
+  const ctx = canvas.getContext('2d');
+
+  let board = createBoard();
+  let moves = [];        // {r,c,player}
+  let current = X;
+  let gameOver = false;
+  let winLine = null;    // array of {r,c}
+  let mode = 'pvp';       // 'pvp' | 'ai'
+  let difficulty = 'medium';
+  let aiThinking = false;
+  let soundOn = true;
+  let scores = {x:0, o:0, draw:0};
+  let lastMoveAnim = null; // {r,c,startTime}
+  let dpr = Math.max(1, window.devicePixelRatio || 1);
+  let cellSize = 0, padding = 0, drawSize = 0;
+
+  function createBoard(){
+    const b = [];
+    for(let i=0;i<SIZE;i++){ b.push(new Array(SIZE).fill(EMPTY)); }
+    return b;
+  }
+
+  // ---------- seeded pseudo-random for hand-drawn jitter ----------
+  function seedRand(r,c,salt){
+    const x = Math.sin(r*127.1 + c*311.7 + salt*74.3) * 43758.5453;
+    return x - Math.floor(x);
+  }
+
+  // ---------- canvas sizing ----------
+  function resize(){
+    const wrapWidth = canvas.parentElement.clientWidth;
+    const cssSize = Math.max(280, Math.min(600, wrapWidth));
+    dpr = Math.max(1, window.devicePixelRatio || 1);
+    canvas.style.width = cssSize + 'px';
+    canvas.style.height = cssSize + 'px';
+    canvas.width = cssSize * dpr;
+    canvas.height = cssSize * dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    padding = cssSize * 0.055;
+    drawSize = cssSize - padding*2;
+    cellSize = drawSize / (SIZE-1);
+    draw();
+  }
+
+  function cellPos(i){ return padding + i*cellSize; }
+
+  // ---------- drawing ----------
+  function draw(){
+    const cssSize = parseFloat(canvas.style.width);
+    ctx.clearRect(0,0,cssSize,cssSize);
+
+    // grid
+    ctx.strokeStyle = 'rgba(58,43,24,0.38)';
+    ctx.lineWidth = 1;
+    for(let i=0;i<SIZE;i++){
+      const p = cellPos(i);
+      ctx.beginPath();
+      ctx.moveTo(cellPos(0), p);
+      ctx.lineTo(cellPos(SIZE-1), p);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(p, cellPos(0));
+      ctx.lineTo(p, cellPos(SIZE-1));
+      ctx.stroke();
+    }
+    // outer border thicker
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = 'rgba(58,43,24,0.5)';
+    ctx.strokeRect(cellPos(0), cellPos(0), cellPos(SIZE-1)-cellPos(0), cellPos(SIZE-1)-cellPos(0));
+
+    // star points
+    const stars = [[3,3],[3,11],[11,3],[11,11],[7,7]];
+    ctx.fillStyle = 'rgba(58,43,24,0.5)';
+    stars.forEach(([r,c])=>{
+      ctx.beginPath();
+      ctx.arc(cellPos(c), cellPos(r), Math.max(2, cellSize*0.06), 0, Math.PI*2);
+      ctx.fill();
+    });
+
+    // stones
+    const now = performance.now();
+    for(let r=0;r<SIZE;r++){
+      for(let c=0;c<SIZE;c++){
+        if(board[r][c] === EMPTY) continue;
+        let scale = 1;
+        if(lastMoveAnim && lastMoveAnim.r===r && lastMoveAnim.c===c){
+          const t = Math.min(1, (now - lastMoveAnim.start)/170);
+          scale = 0.35 + 0.65*easeOutBack(t);
+          if(t < 1) requestAnimationFrame(draw);
+        }
+        drawStone(r,c,board[r][c],scale);
+      }
+    }
+
+    // last move ring
+    if(moves.length){
+      const last = moves[moves.length-1];
+      ctx.beginPath();
+      ctx.arc(cellPos(last.c), cellPos(last.r), cellSize*0.42, 0, Math.PI*2);
+      ctx.strokeStyle = 'rgba(58,43,24,0.55)';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+    }
+
+    // win line
+    if(winLine){
+      const a = winLine[0], b = winLine[winLine.length-1];
+      const pulse = 0.6 + 0.4*Math.sin(now/260);
+      ctx.beginPath();
+      ctx.moveTo(cellPos(a.c), cellPos(a.r));
+      ctx.lineTo(cellPos(b.c), cellPos(b.r));
+      ctx.lineCap = 'round';
+      ctx.lineWidth = cellSize*0.16;
+      ctx.strokeStyle = `rgba(178,58,46,${0.55*pulse+0.25})`;
+      ctx.stroke();
+      requestAnimationFrame(draw);
+    }
+  }
+
+  function easeOutBack(t){
+    const c1 = 1.70158, c3 = c1+1;
+    return 1 + c3*Math.pow(t-1,3) + c1*Math.pow(t-1,2);
+  }
+
+  function drawStone(r,c,player,scale){
+    const cx = cellPos(c), cy = cellPos(r);
+    const rad = cellSize*0.38*scale;
+    ctx.save();
+    ctx.translate(cx,cy);
+    const jitter = (seedRand(r,c,1)-0.5)*0.12;
+    ctx.rotate(jitter);
+    if(player === X){
+      ctx.strokeStyle = '#b23a2e';
+      ctx.lineWidth = Math.max(2, cellSize*0.12);
+      ctx.lineCap = 'round';
+      const wob1 = (seedRand(r,c,2)-0.5)*rad*0.15;
+      const wob2 = (seedRand(r,c,3)-0.5)*rad*0.15;
+      ctx.beginPath();
+      ctx.moveTo(-rad+wob1,-rad+wob2);
+      ctx.quadraticCurveTo(wob1*0.5, wob2*0.5, rad+wob2, rad+wob1);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(rad+wob2,-rad+wob1);
+      ctx.quadraticCurveTo(-wob2*0.5, wob1*0.5, -rad+wob1, rad+wob2);
+      ctx.stroke();
+    } else {
+      ctx.strokeStyle = '#3f6b4e';
+      ctx.lineWidth = Math.max(2, cellSize*0.12);
+      ctx.beginPath();
+      const wob = seedRand(r,c,4)*0.5;
+      ctx.arc(0,0,rad*0.82, wob, wob+Math.PI*1.86);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // ---------- game logic ----------
+  const DIRS = [[1,0],[0,1],[1,1],[1,-1]];
+
+  function inBounds(r,c){ return r>=0 && r<SIZE && c>=0 && c<SIZE; }
+
+  function checkWin(r,c,player){
+    for(const [dx,dy] of DIRS){
+      let cells = [{r,c}];
+      let rr=r+dx, cc=c+dy;
+      while(inBounds(rr,cc) && board[rr][cc]===player){ cells.push({r:rr,c:cc}); rr+=dx; cc+=dy; }
+      rr=r-dx; cc=c-dy;
+      while(inBounds(rr,cc) && board[rr][cc]===player){ cells.unshift({r:rr,c:cc}); rr-=dx; cc-=dy; }
+      if(cells.length >= 5) return cells;
+    }
+    return null;
+  }
+
+  function boardFull(){
+    return moves.length >= SIZE*SIZE;
+  }
+
+  function placeStone(r,c,player){
+    if(gameOver || board[r][c] !== EMPTY) return false;
+    board[r][c] = player;
+    moves.push({r,c,player});
+    lastMoveAnim = {r,c,start: performance.now()};
+    playClick();
+    const win = checkWin(r,c,player);
+    if(win){
+      gameOver = true;
+      winLine = win;
+      onGameEnd(player);
+    } else if(boardFull()){
+      gameOver = true;
+      onGameEnd(null);
+    } else {
+      current = (player===X) ? O : X;
+      updateTurnUI();
+    }
+    draw();
+    updateUndoBtn();
+    return true;
+  }
+
+  function onGameEnd(winner){
+    if(winner === X) scores.x++;
+    else if(winner === O) scores.o++;
+    else scores.draw++;
+    updateScoreUI();
+    showWinOverlay(winner);
+    playWin(winner);
+  }
+
+  // ---------- AI ----------
+  function patternScore(count, openEnds){
+    if(count>=5) return 100000;
+    if(count===4) return openEnds===2?12000: openEnds===1?1200:0;
+    if(count===3) return openEnds===2?900: openEnds===1?150:0;
+    if(count===2) return openEnds===2?40: openEnds===1?10:0;
+    if(count===1) return openEnds===2?4:1;
+    return 0;
+  }
+
+  function lineScore(r,c,player,dx,dy){
+    let count=1, openEnds=0;
+    let rr=r+dx, cc=c+dy;
+    while(inBounds(rr,cc) && board[rr][cc]===player){count++; rr+=dx; cc+=dy;}
+    if(inBounds(rr,cc) && board[rr][cc]===EMPTY) openEnds++;
+    rr=r-dx; cc=c-dy;
+    while(inBounds(rr,cc) && board[rr][cc]===player){count++; rr-=dx; cc-=dy;}
+    if(inBounds(rr,cc) && board[rr][cc]===EMPTY) openEnds++;
+    return patternScore(count, openEnds);
+  }
+
+  function evaluateCell(r,c,player){
+    board[r][c] = player;
+    let total = 0;
+    for(const [dx,dy] of DIRS){ total += lineScore(r,c,player,dx,dy); }
+    board[r][c] = EMPTY;
+    return total;
+  }
+
+  function getCandidates(){
+    const set = new Set();
+    let any = false;
+    for(let r=0;r<SIZE;r++){
+      for(let c=0;c<SIZE;c++){
+        if(board[r][c]===EMPTY) continue;
+        any = true;
+        for(let dr=-2; dr<=2; dr++){
+          for(let dc=-2; dc<=2; dc++){
+            const rr=r+dr, cc=c+dc;
+            if(inBounds(rr,cc) && board[rr][cc]===EMPTY) set.add(rr+'_'+cc);
+          }
+        }
+      }
+    }
+    if(!any) return [{r:7,c:7}];
+    return Array.from(set).map(s=>{ const [r,c]=s.split('_').map(Number); return {r,c}; });
+  }
+
+  function aiMove(){
+    const aiPlayer = O, humanPlayer = X;
+    const candidates = getCandidates();
+    let attackW = 1.0, defenseW = 0.9, randomness = 0;
+    if(difficulty === 'easy'){ attackW=1.0; defenseW=0.35; randomness=0.5; }
+    if(difficulty === 'medium'){ attackW=1.0; defenseW=0.9; randomness=0.15; }
+    if(difficulty === 'hard'){ attackW=1.0; defenseW=1.15; randomness=0.03; }
+
+    let scored = candidates.map(({r,c})=>{
+      const atk = evaluateCell(r,c,aiPlayer);
+      const def = evaluateCell(r,c,humanPlayer);
+      let s = atk*attackW + def*defenseW;
+      return {r,c,s,atk,def};
+    });
+    scored.sort((a,b)=> b.s - a.s);
+
+    if(difficulty === 'hard' && scored[0].s < 90000){
+      const topK = scored.slice(0, Math.min(8, scored.length));
+      topK.forEach(cand=>{
+        board[cand.r][cand.c] = aiPlayer;
+        const oppCandidates = getCandidates();
+        let worst = 0;
+        oppCandidates.forEach(({r,c})=>{
+          if(r===cand.r && c===cand.c) return;
+          const oa = evaluateCell(r,c,humanPlayer);
+          if(oa > worst) worst = oa;
+        });
+        board[cand.r][cand.c] = EMPTY;
+        cand.refined = cand.s - worst*0.85;
+      });
+      topK.sort((a,b)=> b.refined - a.refined);
+      scored = topK.concat(scored.slice(8));
+    }
+
+    // easy/medium randomness: sometimes pick among top few instead of the very best
+    if(randomness > 0 && Math.random() < randomness){
+      const poolSize = difficulty==='easy' ? Math.min(6, scored.length) : Math.min(3, scored.length);
+      const pick = scored[Math.floor(Math.random()*poolSize)];
+      return pick;
+    }
+    return scored[0];
+  }
+
+  function triggerAiMove(){
+    if(gameOver || mode !== 'ai' || current !== O) return;
+    aiThinking = true;
+    document.getElementById('thinking').textContent = 'máy đang suy nghĩ…';
+    setTimeout(()=>{
+      if(gameOver){ aiThinking=false; document.getElementById('thinking').textContent=''; return; }
+      const move = aiMove();
+      aiThinking = false;
+      document.getElementById('thinking').textContent = '';
+      if(move) placeStone(move.r, move.c, O);
+    }, 420 + Math.random()*260);
+  }
+
+  // ---------- input ----------
+  canvas.addEventListener('click', (e)=>{
+    if(gameOver || aiThinking) return;
+    if(mode==='ai' && current===O) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const cssSize = parseFloat(canvas.style.width);
+    let bestR=-1, bestC=-1, bestD = Infinity;
+    for(let r=0;r<SIZE;r++){
+      for(let c=0;c<SIZE;c++){
+        const px = cellPos(c), py = cellPos(r);
+        const d = (px-x)*(px-x) + (py-y)*(py-y);
+        if(d < bestD){ bestD = d; bestR=r; bestC=c; }
+      }
+    }
+    if(bestD > (cellSize*0.5)*(cellSize*0.5)) return; // too far from an intersection
+    ensureAudio();
+    const placedPlayer = current;
+    if(placeStone(bestR, bestC, placedPlayer)){
+      if(!gameOver && mode==='ai') triggerAiMove();
+    }
+  });
+
+  // ---------- UI wiring ----------
+  const modeSeg = document.getElementById('modeSeg');
+  const diffSeg = document.getElementById('diffSeg');
+  const diffRow = document.getElementById('diffRow');
+
+  modeSeg.querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      modeSeg.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      mode = btn.dataset.mode;
+      diffRow.classList.toggle('hidden', mode !== 'ai');
+      newGame();
+    });
+  });
+  diffSeg.querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      diffSeg.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      difficulty = btn.dataset.diff;
+    });
+  });
+
+  function updateTurnUI(){
+    const dot = document.getElementById('turnDot');
+    const text = document.getElementById('turnText');
+    const sub = document.getElementById('turnSub');
+    dot.classList.remove('x','o');
+    dot.classList.add(current===X ? 'x':'o');
+    dot.textContent = current===X ? 'X' : 'O';
+    if(mode==='ai'){
+      text.textContent = current===X ? 'Lượt của Bạn (X)' : 'Lượt của Máy (O)';
+    } else {
+      text.textContent = current===X ? 'Lượt của Người 1 (X)' : 'Lượt của Người 2 (O)';
+    }
+    sub.textContent = current===X ? 'nét mực còn tươi…' : 'tre xanh vừa uốn cong…';
+  }
+
+  function updateScoreUI(){
+    document.getElementById('scoreX').textContent = scores.x;
+    document.getElementById('scoreO').textContent = scores.o;
+    document.getElementById('scoreDraw').textContent = scores.draw;
+  }
+
+  function updateUndoBtn(){
+    document.getElementById('btnUndo').disabled = moves.length===0 || aiThinking;
+  }
+
+  function showWinOverlay(winner){
+    const overlay = document.getElementById('winOverlay');
+    const sealText = document.getElementById('sealText');
+    const sealSub = document.getElementById('sealSub');
+    if(winner===null){
+      sealText.textContent = 'HÒA CỜ!';
+      sealSub.textContent = 'không ai nhường ai';
+    } else {
+      sealText.textContent = (winner===X ? 'X' : 'O') + ' THẮNG!';
+      sealSub.textContent = 'năm quân một mạch';
+    }
+    overlay.classList.add('show');
+  }
+  function hideWinOverlay(){
+    document.getElementById('winOverlay').classList.remove('show');
+  }
+
+  document.getElementById('btnReplay').addEventListener('click', newGame);
+  document.getElementById('btnNew').addEventListener('click', newGame);
+  document.getElementById('btnResetScore').addEventListener('click', ()=>{
+    scores = {x:0,o:0,draw:0};
+    updateScoreUI();
+  });
+  document.getElementById('btnUndo').addEventListener('click', ()=>{
+    if(aiThinking || moves.length===0) return;
+    let toRemove = 1;
+    if(mode==='ai' && moves.length>=2 && moves[moves.length-1].player===O) toRemove = 2;
+    for(let i=0;i<toRemove && moves.length>0;i++){
+      const last = moves.pop();
+      board[last.r][last.c] = EMPTY;
+    }
+    gameOver = false;
+    winLine = null;
+    hideWinOverlay();
+    current = moves.length ? (moves[moves.length-1].player===X ? O : X) : X;
+    lastMoveAnim = moves.length ? {r:moves[moves.length-1].r, c:moves[moves.length-1].c, start:performance.now()} : null;
+    updateTurnUI();
+    updateUndoBtn();
+    draw();
+  });
+
+  document.getElementById('btnSound').addEventListener('click', (e)=>{
+    soundOn = !soundOn;
+    e.target.textContent = soundOn ? '🔊' : '🔇';
+  });
+
+  function newGame(){
+    board = createBoard();
+    moves = [];
+    current = X;
+    gameOver = false;
+    winLine = null;
+    aiThinking = false;
+    lastMoveAnim = null;
+    document.getElementById('thinking').textContent = '';
+    hideWinOverlay();
+    updateTurnUI();
+    updateUndoBtn();
+    draw();
+  }
+
+  // ---------- sound ----------
+  let audioCtx = null;
+  function ensureAudio(){
+    if(!audioCtx){
+      try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){}
+    }
+  }
+  function playClick(){
+    if(!soundOn) return;
+    ensureAudio();
+    if(!audioCtx) return;
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(220, t);
+    osc.frequency.exponentialRampToValueAtTime(140, t+0.06);
+    gain.gain.setValueAtTime(0.16, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t+0.09);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t+0.1);
+  }
+  function playWin(winner){
+    if(!soundOn) return;
+    ensureAudio();
+    if(!audioCtx) return;
+    const notes = winner===null ? [330,294,262] : [392,494,588];
+    notes.forEach((freq,i)=>{
+      const t = audioCtx.currentTime + i*0.11;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(0.18, t+0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t+0.35);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t+0.36);
+    });
+  }
+
+  // ---------- init ----------
+  window.addEventListener('resize', resize);
+  updateTurnUI();
+  updateScoreUI();
+  updateUndoBtn();
+  resize();
+})();
+</script>
+</body>
+</html>
